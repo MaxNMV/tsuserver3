@@ -85,6 +85,7 @@ class AreaManager:
             self.shouts_allowed = shouts_allowed
             self.abbreviation = abbreviation
             self.cards = dict()
+            self.shadow_status = {}
             self.is_locked = self.Locked.FREE
             self.blankposting_allowed = True
             self.non_int_pres_only = non_int_pres_only

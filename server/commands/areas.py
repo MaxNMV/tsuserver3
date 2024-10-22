@@ -14,9 +14,9 @@ __all__ = [
     'ooc_cmd_area',
     'ooc_cmd_getarea',
     'ooc_cmd_getareas',
-    'ooc_cmd_area_lock',
+    'ooc_cmd_lock',
     'ooc_cmd_area_spectate',
-    'ooc_cmd_area_unlock',
+    'ooc_cmd_unlock',
     'ooc_cmd_invite',
     'ooc_cmd_uninvite',
     'ooc_cmd_area_kick',
@@ -179,10 +179,10 @@ def ooc_cmd_getafk(client, arg):
     client.send_area_info(arg, False, afk_check=True)
 
 
-def ooc_cmd_area_lock(client, arg):
+def ooc_cmd_lock(client, arg):
     """
     Prevent users from joining the current area.
-    Usage: /area_lock
+    Usage: /lock
     """
     if not client.area.locking_allowed:
         client.send_ooc('Area locking is disabled in this area.')
@@ -193,10 +193,10 @@ def ooc_cmd_area_lock(client, arg):
     else:
         raise ClientError('Only CM can lock the area.')
 
-def ooc_cmd_area_unlock(client, arg):
+def ooc_cmd_unlock(client, arg):
     """
     Allow anyone to freely join the current area.
-    Usage: /area_unlock
+    Usage: /unlock
     """
     if client.area.is_locked == client.area.Locked.FREE:
         raise ClientError('Area is already unlocked.')
