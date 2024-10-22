@@ -59,6 +59,7 @@ class ClientManager:
             self.evi_list = []
             self.disemvowel = False
             self.shaken = False
+            self.gimp = False
             self.charcurse = []
             self.area_curse = None
             self.area_curse_info = None
@@ -644,6 +645,12 @@ class ClientManager:
             parts = message.split()
             random.shuffle(parts)
             return ' '.join(parts)
+        
+        def gimp_message(self, message):
+            """Send a random message instead of entered text"""
+            import random
+            message = self.server.gimp_list
+            return random.choice(message)
 
     def __init__(self, server):
         self.clients = set()

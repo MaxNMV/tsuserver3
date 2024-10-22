@@ -570,6 +570,10 @@ def ooc_cmd_baninfo(client, arg):
 
 @mod_only()
 def ooc_cmd_lastchar(client, arg):
+    """
+    Prints IPID and HDID of the last user on a specificed character in the current area.
+    Usage: /lastchar <character name>
+    """
     if len(arg) == 0:
         raise ArgumentError('You must specify a character name.')
 
