@@ -429,6 +429,9 @@ class AOProtocol(asyncio.Protocol):
         elif self.client.is_muted:  # Checks to see if the client has been muted by a mod
             self.client.send_ooc('You are muted by a moderator.')
             return
+        elif self.client.blinded:  # Checks to see if the client has been blinded by CM or mod
+            self.client.send_ooc("You are blinded - you cannot speak or see IC messages!")
+            return
         elif not self.client.area.can_send_message(self.client):
             return
 

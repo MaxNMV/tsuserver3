@@ -114,6 +114,9 @@ class ClientManager:
             
             # idle timeout stuff
             self.last_pkt_time = 0
+            
+            # Extra Stuff
+            self.blinded = False
 
         def send_raw_message(self, msg: str):
             """Send a raw packet over TCP.
@@ -133,6 +136,10 @@ class ClientManager:
             """
             if args:
                 if command == 'MS':
+                    if self.blinded and args[0] != 'broadcast':
+                        return #Don't receive any chat messages when blinded that are not broadcast_ic'ed
+                    if args[0] == 'broadcast':
+                        args[0] = '0'
                     for evi_num in range(len(self.evi_list)):
                         if self.evi_list[evi_num] == args[11]:
                             lst = list(args) # convert to a list so we can modify it
@@ -279,6 +286,14 @@ class ClientManager:
             self.mus_counter = (self.mus_counter + 1) % times_per_interval
             self.mus_change_time[self.mus_counter] = time.time()
             return 0
+            
+        def blind(self, tog=True):
+            self.blinded = tog
+            msg = 'no longer'
+            if tog:
+                msg = 'now'
+            self.send_ooc(
+                'You are {} blinded from /getarea and seeing non-broadcasted IC messages.'.format(msg))
 
         def wtce_mute(self) -> int:
             """Check if the client can use WT/CE or not.
