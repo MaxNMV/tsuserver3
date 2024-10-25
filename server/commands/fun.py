@@ -128,7 +128,7 @@ def ooc_cmd_gimp(client, arg):
 @mod_only()
 def ooc_cmd_ungimp(client, arg):
     """
-    Allow the user to send their own messages again.
+    Give back the freedom of speech.
     Usage: /ungimp <id>
     """
     if len(arg) == 0:

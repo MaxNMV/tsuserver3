@@ -15,7 +15,9 @@ __all__ = [
     'ooc_cmd_charcurse',
     'ooc_cmd_uncharcurse',
     'ooc_cmd_charids',
-    'ooc_cmd_reload'
+    'ooc_cmd_reload',
+    'ooc_cmd_hide',
+    'ooc_cmd_unhide'
 ]
 
 
@@ -242,3 +244,56 @@ def ooc_cmd_reload(client, arg):
     except ClientError:
         raise
     client.send_ooc('Character reloaded.')
+
+
+@mod_only()
+def ooc_cmd_hide(client, arg):
+    """
+    Hide player from /getarea and playercounts.
+    Usage: /hide <id>
+    """
+    if len(arg) == 0:
+        raise ArgumentError('You must specify a target.')
+    try:
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.ID, int(arg), False)
+    except:
+        raise ArgumentError('You must specify a target. Use /hide <id>.')
+    if targets:
+        c = targets[0]
+        if c.hidden:
+            raise ClientError(
+                'Client [{}] {} already hidden!'.format(c.id, c.char_name, c.name))
+        c.hide(True)
+        c.send_ooc(
+            "You have been hidden.")
+        client.send_ooc(
+            'You have hidden [{}] {}.'.format(c.id, c.char_name, c.name))
+    else:
+        client.send_ooc('No targets found.')
+
+
+@mod_only()
+def ooc_cmd_unhide(client, arg):
+    """
+    Unhide player from /getarea and playercounts.
+    Usage: /unhide <id>
+    """
+    if len(arg) == 0:
+        raise ArgumentError('You must specify a target.')
+    try:
+        targets = client.server.client_manager.get_targets(
+            client, TargetType.ID, int(arg), False)
+    except:
+        raise ArgumentError('You must specify a target. Use /unhide <id>.')
+    if targets:
+        c = targets[0]
+        if not c.hidden:
+            raise ClientError(
+                'Client [{}] {} already revealed!'.format(c.id, c.char_name, c.name))
+        c.hide(False)
+        c.send_ooc(
+            "You have been revealed.")
+        client.send_ooc('You have revealed [{}] {}.'.format(c.id, c.char_name, c.name))
+    else:
+        client.send_ooc('No targets found.')

@@ -117,6 +117,8 @@ class ClientManager:
             
             # Extra Stuff
             self.blinded = False
+            self.hidden = False
+            self.modicon = False
 
         def send_raw_message(self, msg: str):
             """Send a raw packet over TCP.
@@ -295,6 +297,9 @@ class ClientManager:
             self.send_ooc(
                 'You are {} blinded from /getarea and seeing non-broadcasted IC messages.'.format(msg))
 
+        def hide(self, tog=True):
+            self.hidden = tog
+
         def wtce_mute(self) -> int:
             """Check if the client can use WT/CE or not.
 
@@ -428,7 +433,8 @@ class ClientManager:
                     area.Locked.SPECTATABLE: '[SPECTATABLE]',
                     area.Locked.LOCKED: '[LOCKED]'
                 }
-                msg += f'\r\nArea {area.abbreviation}: {area.name} (users: {len(area.clients)}) [{area.status}][{owner}]{lock[area.is_locked]}'
+                player_list = [c for c in area.clients if not c.hidden or c == self]
+                msg += f'\r\nArea {area.abbreviation}: {area.name} (users: {len(player_list)}) [{area.status}][{owner}]{lock[area.is_locked]}'
                 if self.area == area:
                     msg += ' [*]'
             self.send_ooc(msg)
@@ -461,13 +467,17 @@ class ClientManager:
             if afk_check:
                 player_list = area.afkers
             else:
-                player_list = area.clients
+                if self.is_mod:
+                    player_list = area.clients
+                else:
+                    player_list = [c for c in area.clients if not c.hidden or c == self]
             info += f'[{area.abbreviation}]: [{len(player_list)} users][{area.status}]{lock[area.is_locked]}'
 
             sorted_clients = []
             for client in player_list:
                 if (not mods) or client.is_mod:
-                    sorted_clients.append(client)
+                    if not client.hidden or self.is_mod or client == self:
+                        sorted_clients.append(client)
             for owner in area.owners:
                 if not (mods or owner in player_list):
                     sorted_clients.append(owner)
@@ -477,18 +487,24 @@ class ClientManager:
                                     key=lambda x: x.char_name or '')
             for c in sorted_clients:
                 info += '\r\n'
+                if c.modicon:
+                    info += " 🔴 "
+                elif c == self:
+                    info += " ⚪️ "
+                else:
+                    info += " ⚫️ "  # Other players see ◾ for everyone
+                if c.hidden:
+                    info += " 👀 "
                 if c in area.owners:
                     if not c in player_list:
                         info += '[RCM]'
                     else:
                         info += '[CM]'
                 if c in area.afkers:
-                    info += '[AFK]'
+                    info += '[💤]'
                 info += f' [{c.id}] {c.char_name}'
-                if c.showname != "":
-                    info += f' ({c.showname})'
                 if self.is_mod:
-                    info += f' ({c.ipid}): {c.name}'
+                    info += f' (IPID: {c.ipid}) Showname: ({c.showname}) OOC: {c.name}'
             return info
 
         def send_area_info(self, area_id: int, mods: bool, afk_check=False):
@@ -820,4 +836,7 @@ class ClientManager:
         for client in self.clients:
             if time.time() - client.last_pkt_time > self.server.config['idle_timeout']['length'] and not client.is_mod:
                 client.disconnect()
+
+    def get_multiclients(self, ipid=-1, hdid=""):
+        return [c for c in self.clients if c.ipid == ipid or c.hdid == hdid]
 				

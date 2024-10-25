@@ -322,6 +322,10 @@ def ooc_cmd_judgelog(client, arg):
         )
         
 def ooc_cmd_afk(client, arg):
+    """
+    Adds an icon in getarea that indicates that the player is AFK
+    Usage: /afk
+    """
     client.server.client_manager.toggle_afk(client)
     
 def ooc_cmd_testimony(client, arg):

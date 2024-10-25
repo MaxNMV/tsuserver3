@@ -14,23 +14,26 @@ from . import mod_only, list_commands, list_submodules, help
 __all__ = [
     'ooc_cmd_motd',
     'ooc_cmd_help',
+    'ooc_cmd_time',
+    'ooc_cmd_online',
+    'ooc_cmd_login',
+    'ooc_cmd_unmod',
+    'ooc_cmd_refresh',
+    'ooc_cmd_mods',
+    'ooc_cmd_modicon',
     'ooc_cmd_kick',
     'ooc_cmd_ban',
     'ooc_cmd_banhdid',
-    'ooc_cmd_area_curse',
     'ooc_cmd_unban',
-    'ooc_cmd_mute',
-    'ooc_cmd_unmute',
-    'ooc_cmd_login',
-    'ooc_cmd_refresh',
-    'ooc_cmd_online',
-    'ooc_cmd_mods',
-    'ooc_cmd_unmod',
-    'ooc_cmd_ooc_mute',
-    'ooc_cmd_ooc_unmute',
     'ooc_cmd_bans',
     'ooc_cmd_baninfo',
+    'ooc_cmd_multiclients',
     'ooc_cmd_lastchar',
+    'ooc_cmd_mute',
+    'ooc_cmd_unmute',
+    'ooc_cmd_ooc_mute',
+    'ooc_cmd_ooc_unmute',
+    'ooc_cmd_area_curse',
     'ooc_cmd_blind',
     'ooc_cmd_unblind'
 ]
@@ -455,6 +458,7 @@ def ooc_cmd_login(client, arg):
         raise
     if client.area.evidence_mod == 'HiddenCM':
         client.area.broadcast_evidence_list()
+    client.modicon = True
     client.send_ooc('Logged in as a moderator.')
     client.send_command('AUTH', '1')
     database.log_misc('login', client, data={'profile': login_name})
@@ -494,16 +498,21 @@ def ooc_cmd_unmod(client, arg):
     client.mod_profile_name = None
     if client.area.evidence_mod == 'HiddenCM':
         client.area.broadcast_evidence_list()
+    client.modicon = False
     client.send_ooc('you\'re not a mod now')
     client.send_command('AUTH', '-1')
 
-@mod_only()
 def ooc_cmd_mods(client, arg):
     """
     Show a list of moderators online.
     Usage: /mods
     """
-    client.send_area_info(-1, True)
+    if client.is_mod:
+        client.send_area_info(-1, True)
+    else:
+        client.send_ooc(
+        "There are {} mods online.".format(client.server.area_manager.mods_online(),
+                                                              len))
 
 @mod_only()
 def ooc_cmd_ooc_mute(client, arg):
@@ -651,6 +660,10 @@ def ooc_cmd_lastchar(client, arg):
 
 @mod_only()
 def ooc_cmd_blind(client, arg):
+    """
+    Blind the targeted player(s) from being able to see or talk IC.
+    Usage: /blind <id(s)>
+    """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
     try:
@@ -672,6 +685,10 @@ def ooc_cmd_blind(client, arg):
 
 @mod_only()
 def ooc_cmd_unblind(client, arg):
+    """
+    Undo effects of the /blind command.
+    Usage: /unblind <id(s)>
+    """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
     try:
@@ -690,3 +707,56 @@ def ooc_cmd_unblind(client, arg):
     else:
         raise ArgumentError('No targets found.')
 
+
+def ooc_cmd_time(client, arg):
+    """
+    Returns the current server time.
+    Usage:  /time
+    """
+    if len(arg) > 0:
+        raise ArgumentError("This command takes no arguments")
+    from time import asctime, gmtime, time
+
+    msg = "The current time in UTC (aka GMT) is:\n["
+    msg += asctime(gmtime(time()))
+    msg += "]"
+    client.send_ooc(msg)
+
+
+@mod_only()
+def ooc_cmd_multiclients(client, arg):
+    """
+    Get all the multi-clients of the IPID provided, detects multiclients on the same hardware even if the IPIDs are different.
+    Usage: /multiclients <ipid>
+    """
+    found_clients = set()
+    for c in client.server.client_manager.clients:
+        if arg == str(c.ipid):
+            found_clients.add(c)
+            found_clients |= set(client.server.client_manager.get_multiclients(c.ipid, c.hdid))
+
+    info = f"Clients belonging to {arg}:"
+    for c in found_clients:
+        info += f"\n[{c.id}] "
+        if c.showname != c.char_name:
+            info += f'"{c.showname}" ({c.char_name})'
+        else:
+            info += f"{c.showname}"
+        info += f" ({c.ipid})"
+        if c.name != "":
+            info += f": {c.name}"
+    info += f"\nMatched {len(found_clients)} online clients."
+    client.send_ooc(info)
+
+@mod_only()
+def ooc_cmd_modicon(client, arg):
+    """
+    Toggle the moderator icon in getareas.
+    Usage: /modicon
+    """
+    if client.modicon:
+        client.modicon = False
+        client.send_ooc('Your Mod icon has been removed from getarea.')
+    else:
+        client.modicon = True
+        client.send_ooc('Your Mod icon can now be seen in getarea.')
