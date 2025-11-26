@@ -59,11 +59,10 @@ def ooc_cmd_roll(client, arg):
         client.char_name, roll, val[0]))
     database.log_room('roll', client, client.area, message=f'{roll} out of {val[0]}')
 
-
 def ooc_cmd_rollp(client, arg):
     """
     Roll a die privately.
-    Usage: /roll [max value] [rolls]
+    Usage: /rollp [max value] [rolls]
     """
     roll_max = 11037
     if len(arg) != 0:
@@ -101,7 +100,6 @@ def ooc_cmd_rollp(client, arg):
 
     database.log_room('rollp', client, client.area, message=f'{roll} out of {val[0]}')
 
-
 def ooc_cmd_notecard(client, arg):
     """
     Write a notecard that can only be revealed by a CM.
@@ -113,7 +111,6 @@ def ooc_cmd_notecard(client, arg):
     client.area.broadcast_ooc('{} wrote a note card.'.format(
         client.char_name))
     database.log_room('notecard', client, client.area)
-
 
 def ooc_cmd_notecard_clear(client, arg):
     """
@@ -127,7 +124,6 @@ def ooc_cmd_notecard_clear(client, arg):
         database.log_room('notecard_erase', client, client.area)
     except KeyError:
         raise ClientError('You do not have a note card.')
-
 
 @mod_only(area_owners=True)
 def ooc_cmd_notecard_reveal(client, arg):
@@ -144,7 +140,6 @@ def ooc_cmd_notecard_reveal(client, arg):
     client.area.broadcast_ooc(msg)
     database.log_room('notecard_reveal', client, client.area)
 
-
 @mod_only()
 def ooc_cmd_rolla_reload(client, arg):
     """
@@ -155,7 +150,6 @@ def ooc_cmd_rolla_reload(client, arg):
     client.send_ooc('Reloaded ability dice configuration.')
     database.log_room('rolla_reload', client, client.area)
 
-
 def rolla_reload(area):
     try:
         import yaml
@@ -165,7 +159,6 @@ def rolla_reload(area):
         raise ServerError(
             'There was an error parsing the ability dice configuration. Check your syntax.'
         )
-
 
 def ooc_cmd_rolla_set(client, arg):
     """
@@ -186,13 +179,11 @@ def ooc_cmd_rolla_set(client, arg):
     client.ability_dice_set = arg
     client.send_ooc(f"Set ability set to {arg}.")
 
-
 def rolla(ability_dice):
     max_roll = ability_dice['max'] if 'max' in ability_dice else 6
     roll = random.randint(1, max_roll)
     ability = ability_dice[roll] if roll in ability_dice else "Nothing happens."
     return (roll, max_roll, ability)
-
 
 def ooc_cmd_rolla(client, arg):
     """
@@ -211,7 +202,6 @@ def ooc_cmd_rolla(client, arg):
     database.log_room('rolla', client, client.area,
                         message=f'{roll} out of {max_roll}: {ability}')
 
-
 def ooc_cmd_coinflip(client, arg):
     """
     Flip a coin. The result is shown publicly.
@@ -224,7 +214,6 @@ def ooc_cmd_coinflip(client, arg):
     client.area.broadcast_ooc('{} flipped a coin and got {}.'.format(
         client.char_name, flip))
     database.log_room('coinflip', client, client.area, message=flip)
-
 
 def ooc_cmd_8ball(client, arg):
     """

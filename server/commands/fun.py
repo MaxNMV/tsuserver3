@@ -35,7 +35,6 @@ def ooc_cmd_disemvowel(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_undisemvowel(client, arg):
     """
@@ -58,7 +57,6 @@ def ooc_cmd_undisemvowel(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_shake(client, arg):
     """
@@ -79,7 +77,6 @@ def ooc_cmd_shake(client, arg):
         client.send_ooc(f'Shook {len(targets)} existing client(s).')
     else:
         client.send_ooc('No targets found.')
-
 
 @mod_only()
 def ooc_cmd_unshake(client, arg):
@@ -102,7 +99,6 @@ def ooc_cmd_unshake(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_gimp(client, arg):
     """
@@ -124,11 +120,10 @@ def ooc_cmd_gimp(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_ungimp(client, arg):
     """
-    Give back the freedom of speech.
+    Give back the user their freedom of speech.
     Usage: /ungimp <id>
     """
     if len(arg) == 0:

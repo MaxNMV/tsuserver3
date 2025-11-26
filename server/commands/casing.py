@@ -39,7 +39,6 @@ def ooc_cmd_doc(client, arg):
             client.char_name))
         database.log_room('doc.change', client, client.area, message=arg)
 
-
 def ooc_cmd_cleardoc(client, arg):
     """
     Clear the link for the current case document.
@@ -52,12 +51,10 @@ def ooc_cmd_cleardoc(client, arg):
         client.char_name))
     database.log_room('doc.clear', client, client.area)
 
-
 @mod_only()
 def ooc_cmd_evidence_mod(client, arg):
     """
-    Change the evidence privilege mode. Refer to the documentation
-    for more information on the function of each mode.
+    Change the evidence privilege mode. Refer to the documentation for more information on the function of each mode.
     Usage: /evidence_mod <FFA|Mods|CM|HiddenCM>
     """
     if not arg or arg == client.area.evidence_mod:
@@ -76,7 +73,6 @@ def ooc_cmd_evidence_mod(client, arg):
             'Wrong Argument. Use /evidence_mod <MOD>. Possible values: FFA, CM, Mods, HiddenCM'
         )
 
-
 def ooc_cmd_evi_swap(client, arg):
     """
     Swap the positions of two evidence items on the evidence list.
@@ -90,7 +86,6 @@ def ooc_cmd_evi_swap(client, arg):
         client.area.broadcast_evidence_list()
     except:
         raise ClientError("you must specify 2 numbers")
-
 
 def ooc_cmd_cm(client, arg):
     """
@@ -141,7 +136,6 @@ def ooc_cmd_cm(client, arg):
                     f'{id} does not look like a valid ID.')
     else:
         raise ClientError('You must be authorized to do that.')
-
 
 @mod_only(area_owners=True)
 def ooc_cmd_uncm(client, arg):
@@ -204,12 +198,10 @@ def ooc_cmd_setcase(client, arg):
         client.casing_jur = args[5] == "1"
         client.casing_steno = args[6] == "1"
 
-
 # LEGACY
 def ooc_cmd_anncase(client, arg):
     """
-    Announce that a case is currently taking place in this area,
-    needing a certain list of positions to be filled up.
+    Announce that a case is currently taking place in this area, needing a certain list of positions to be filled up.
     Usage: /anncase <message> <def> <pro> <jud> <jur> <steno>
     """
     # XXX: Merge with aoprotocol.net_cmd_casea
@@ -251,7 +243,6 @@ def ooc_cmd_anncase(client, arg):
         raise ClientError(
             'You cannot announce a case in an area where you are not a CM!')
 
-
 @mod_only()
 def ooc_cmd_blockwtce(client, arg):
     """
@@ -276,7 +267,6 @@ def ooc_cmd_blockwtce(client, arg):
     client.send_ooc('blockwtce\'d {}.'.format(
         targets[0].char_name))
 
-
 @mod_only()
 def ooc_cmd_unblockwtce(client, arg):
     """
@@ -300,7 +290,6 @@ def ooc_cmd_unblockwtce(client, arg):
         database.log_room('unblockwtce', client, client.area, target=target)
     client.send_ooc('unblockwtce\'d {}.'.format(
         targets[0].char_name))
-
 
 @mod_only()
 def ooc_cmd_judgelog(client, arg):

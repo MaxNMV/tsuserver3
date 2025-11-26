@@ -44,12 +44,10 @@ def ooc_cmd_bg(client, arg):
         f'{client.char_name} changed the background to {arg}.')
     database.log_room('bg', client, client.area, message=arg)
 
-
 @mod_only()
 def ooc_cmd_bglock(client, arg):
     """
-    Toggle whether or not non-moderators are allowed to change
-    the background of a room.
+    Toggle whether or not non-moderators are allowed to change the background of a room.
     Usage: /bglock
     """
     if len(arg) != 0:
@@ -64,13 +62,10 @@ def ooc_cmd_bglock(client, arg):
             client.char_name, client.id, client.area.bg_lock))
     database.log_room('bglock', client, client.area, message=client.area.bg_lock)
 
-
 @mod_only()
 def ooc_cmd_allow_iniswap(client, arg):
     """
-    Toggle whether or not users are allowed to swap INI files in character
-    folders to allow playing as a character other than the one chosen in
-    the character list.
+    Toggle whether or not users are allowed to swap INI files in character folders to allow playing as a character other than the one chosen in the character list.
     Usage: /allow_iniswap
     """
     client.area.iniswap_allowed = not client.area.iniswap_allowed
@@ -78,12 +73,10 @@ def ooc_cmd_allow_iniswap(client, arg):
     client.send_ooc(f'Iniswap is {answer}.')
     database.log_room('iniswap', client, client.area, message=client.area.iniswap_allowed)
 
-
 @mod_only(area_owners=True)
 def ooc_cmd_allow_blankposting(client, arg):
     """
-    Toggle whether or not in-character messages purely consisting of spaces
-    are allowed.
+    Toggle whether or not in-character messages purely consisting of spaces are allowed.
     Usage: /allow_blankposting
     """
     client.area.blankposting_allowed = not client.area.blankposting_allowed
@@ -93,12 +86,10 @@ def ooc_cmd_allow_blankposting(client, arg):
             client.char_name, client.id, answer))
     database.log_room('blankposting', client, client.area, message=client.area.blankposting_allowed)
 
-
 @mod_only(area_owners=True)
 def ooc_cmd_force_nonint_pres(client, arg):
     """
-    Toggle whether or not all pre-animations lack a delay before a
-    character begins speaking.
+    Toggle whether or not all pre-animations lack a delay before a character begins speaking.
     Usage: /force_nonint_pres
     """
     client.area.non_int_pres_only = not client.area.non_int_pres_only
@@ -107,7 +98,6 @@ def ooc_cmd_force_nonint_pres(client, arg):
         '{} [{}] has set pres in the area to be {}.'.format(
             client.char_name, client.id, answer))
     database.log_room('force_nonint_pres', client, client.area, message=client.area.non_int_pres_only)
-
 
 def ooc_cmd_status(client, arg):
     """
@@ -125,11 +115,10 @@ def ooc_cmd_status(client, arg):
         except AreaError:
             raise
 
-
 def ooc_cmd_area(client, arg):
     """
     List areas, or go to another area/room.
-    Usage: /area [id] or /area [name]
+    Usage: /area [id], /area [name] or simply area
     """
     args = arg.split()
     if len(args) == 0:
@@ -147,7 +136,6 @@ def ooc_cmd_area(client, arg):
             raise ArgumentError('Area ID must be a name or a number.')
         except (AreaError, ClientError):
             raise
-
 
 def ooc_cmd_getarea(client, arg):
     """
@@ -169,7 +157,6 @@ def ooc_cmd_getarea(client, arg):
     except (AreaError, ClientError):
         raise
 
-
 def ooc_cmd_getareas(client, arg):
     """
     Show information about all areas.
@@ -178,7 +165,6 @@ def ooc_cmd_getareas(client, arg):
     if client.blinded:
         raise ArgumentError('You are blinded - you cannot use this command!')
     client.send_area_info(-1, False)
-
 
 def ooc_cmd_getafk(client, arg):
     """
@@ -192,7 +178,6 @@ def ooc_cmd_getafk(client, arg):
     else:
         raise ArgumentError('There is only one optional argument [all].')
     client.send_area_info(arg, False, afk_check=True)
-
 
 def ooc_cmd_lock(client, arg):
     """
@@ -220,7 +205,6 @@ def ooc_cmd_unlock(client, arg):
         client.send_ooc('Area is unlocked.')
     else:
         raise ClientError('Only CM can unlock area.')
-
 
 def ooc_cmd_area_spectate(client, arg):
     """
@@ -271,7 +255,6 @@ def ooc_cmd_invite(client, arg):
     except:
         raise ClientError('You must specify a target. Use /invite <id>')
 
-
 @mod_only(area_owners=True)
 def ooc_cmd_uninvite(client, arg):
     """
@@ -303,8 +286,7 @@ def ooc_cmd_uninvite(client, arg):
     else:
         client.send_ooc("No targets found.")
 
-
-@mod_only()
+@mod_only(area_owners=True)
 def ooc_cmd_area_kick(client, arg):
     """
     Remove a user from the current area and move them to another area.

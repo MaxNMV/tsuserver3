@@ -37,12 +37,10 @@ def ooc_cmd_currentmusic(client, arg):
             'The current music is {} and was played by {}.'.format(
                 client.area.current_music, client.area.current_music_player))
 
-
 @mod_only(area_owners=True)
 def ooc_cmd_jukebox_toggle(client, arg):
     """
-    Toggle jukebox mode. While jukebox mode is on, all music changes become
-    votes for the next track, rather than changing the track immediately.
+    Toggle jukebox mode. While jukebox mode is on, all music changes become votes for the next track, rather than changing the track immediately.
     Usage: /jukebox_toggle
     """
     if len(arg) != 0:
@@ -53,7 +51,6 @@ def ooc_cmd_jukebox_toggle(client, arg):
         client.char_name, client.id, client.area.jukebox))
     database.log_room('jukebox_toggle', client, client.area,
         message=client.area.jukebox)
-
 
 @mod_only(area_owners=True)
 def ooc_cmd_jukebox_skip(client, arg):
@@ -78,7 +75,6 @@ def ooc_cmd_jukebox_skip(client, arg):
             '{} [{}] has forced a skip to the next jukebox song.'.format(
                 client.char_name, client.id))
     database.log_room('jukebox_skip', client, client.area)
-
 
 def ooc_cmd_jukebox(client, arg):
     """
@@ -132,7 +128,6 @@ def ooc_cmd_jukebox(client, arg):
         client.send_ooc(
             f'The jukebox has the following songs in it:{message}')
 
-
 @mod_only(area_owners=True)
 def ooc_cmd_play(client, arg):
     """
@@ -146,7 +141,6 @@ def ooc_cmd_play(client, arg):
     client.area.play_music(arg, client.char_id, 0) #don't loop it
     client.area.add_music_playing(client, arg)
     database.log_room('play', client, client.area, message=arg)
-
 
 @mod_only()
 def ooc_cmd_blockdj(client, arg):
@@ -171,7 +165,6 @@ def ooc_cmd_blockdj(client, arg):
         target.area.remove_jukebox_vote(target, True)
     client.send_ooc('blockdj\'d {}.'.format(
         targets[0].char_name))
-
 
 @mod_only()
 def ooc_cmd_unblockdj(client, arg):

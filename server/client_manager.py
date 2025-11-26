@@ -299,6 +299,7 @@ class ClientManager:
 
         def hide(self, tog=True):
             self.hidden = tog
+            self.server.area_manager.send_arup_players()
 
         def wtce_mute(self) -> int:
             """Check if the client can use WT/CE or not.
@@ -431,10 +432,10 @@ class ClientManager:
                 lock = {
                     area.Locked.FREE: '',
                     area.Locked.SPECTATABLE: '[SPECTATABLE]',
-                    area.Locked.LOCKED: '[LOCKED]'
+                    area.Locked.LOCKED: '[LOCKED] 🔒'
                 }
                 player_list = [c for c in area.clients if not c.hidden or c == self]
-                msg += f'\r\nArea {area.abbreviation}: {area.name} (users: {len(player_list)}) [{area.status}][{owner}]{lock[area.is_locked]}'
+                msg += f'\r\nArea {area.id} {area.abbreviation}: {area.name} (users: {len(player_list)}) [{area.status}][{owner}]{lock[area.is_locked]}'
                 if self.area == area:
                     msg += ' [*]'
             self.send_ooc(msg)
@@ -462,7 +463,7 @@ class ClientManager:
             lock = {
                 area.Locked.FREE: '',
                 area.Locked.SPECTATABLE: '[SPECTATABLE]',
-                area.Locked.LOCKED: '[LOCKED]'
+                area.Locked.LOCKED: '[LOCKED] 🔒'
             }
             if afk_check:
                 player_list = area.afkers
@@ -487,12 +488,14 @@ class ClientManager:
                                     key=lambda x: x.char_name or '')
             for c in sorted_clients:
                 info += '\r\n'
-                if c.modicon:
-                    info += " 🔴 "
+                if c == self and c.modicon:
+                    info += " 🟧 "
+                elif c.modicon:
+                    info += " 🟥 "
                 elif c == self:
-                    info += " ⚪️ "
+                    info += " 🔲 "
                 else:
-                    info += " ⚫️ "  # Other players see ◾ for everyone
+                    info += " 🔳 "
                 if c.hidden:
                     info += " 👀 "
                 if c in area.owners:
@@ -504,7 +507,11 @@ class ClientManager:
                     info += '[💤]'
                 info += f' [{c.id}] {c.char_name}'
                 if self.is_mod:
-                    info += f' (IPID: {c.ipid}) Showname: ({c.showname}) OOC: {c.name}'
+                    info += f' | IPID: {c.ipid}' 
+                    if c.showname != "":
+                        info += f' | Showname: {c.showname}' 
+                    if c.name != "":
+                        info += f' | OOC: {c.name}'
             return info
 
         def send_area_info(self, area_id: int, mods: bool, afk_check=False):

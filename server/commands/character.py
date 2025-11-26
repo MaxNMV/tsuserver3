@@ -40,7 +40,6 @@ def ooc_cmd_switch(client, arg):
         raise
     client.send_ooc('Character changed.')
 
-
 def ooc_cmd_pos(client, arg):
     """
     Set the place your character resides in the room.
@@ -56,7 +55,6 @@ def ooc_cmd_pos(client, arg):
             raise
         client.area.broadcast_evidence_list()
         client.send_ooc('Position changed.')
-
 
 @mod_only(area_owners=True)
 def ooc_cmd_forcepos(client, arg):
@@ -102,7 +100,6 @@ def ooc_cmd_forcepos(client, arg):
         '{} forced {} client(s) into /pos {}.'.format(client.char_name,
                                                       len(targets), pos))
 
-
 def ooc_cmd_charselect(client, arg):
     """
     Enter the character select screen, or force another user to select
@@ -114,7 +111,6 @@ def ooc_cmd_charselect(client, arg):
     else:
         force_charselect(client, arg)
 
-
 @mod_only()
 def force_charselect(client, arg):
     try:
@@ -122,7 +118,6 @@ def force_charselect(client, arg):
             int(arg), False)[0].char_select()
     except:
         raise ArgumentError('Wrong arguments. Use /charselect <target\'s id>')
-
 
 def ooc_cmd_randomchar(client, arg):
     """
@@ -144,7 +139,6 @@ def ooc_cmd_randomchar(client, arg):
         raise
     client.send_ooc('Randomly switched to {}'.format(
         client.char_name))
-
 
 @mod_only()
 def ooc_cmd_charcurse(client, arg):
@@ -189,7 +183,6 @@ def ooc_cmd_charcurse(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_uncharcurse(client, arg):
     """
@@ -217,7 +210,6 @@ def ooc_cmd_uncharcurse(client, arg):
     else:
         client.send_ooc('No targets found.')
 
-
 @mod_only()
 def ooc_cmd_charids(client, arg):
     """
@@ -230,7 +222,6 @@ def ooc_cmd_charids(client, arg):
     for c in range(0, len(client.server.char_list)):
         msg += '\n[' + str(c) + '] ' + client.server.char_list[c]
     client.send_ooc(msg)
-
 
 def ooc_cmd_reload(client, arg):
     """
@@ -245,33 +236,26 @@ def ooc_cmd_reload(client, arg):
         raise
     client.send_ooc('Character reloaded.')
 
-
 @mod_only()
 def ooc_cmd_hide(client, arg):
     """
     Hide player from /getarea and playercounts.
     Usage: /hide <id>
     """
-    if len(arg) == 0:
-        raise ArgumentError('You must specify a target.')
-    try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
-    except:
-        raise ArgumentError('You must specify a target. Use /hide <id>.')
-    if targets:
-        c = targets[0]
-        if c.hidden:
-            raise ClientError(
-                'Client [{}] {} already hidden!'.format(c.id, c.char_name, c.name))
-        c.hide(True)
-        c.send_ooc(
-            "You have been hidden.")
-        client.send_ooc(
-            'You have hidden [{}] {}.'.format(c.id, c.char_name, c.name))
+    if not arg:
+        client.hide(True)
+        client.send_ooc("You have been hidden.")
     else:
-        client.send_ooc('No targets found.')
-
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
+        if targets:
+            c = targets[0]
+            if c.hidden:
+                raise ClientError('Client [{}] {} already hidden!'.format(c.id, c.char_name, c.name))
+            c.hide(True)
+            c.send_ooc("You have been hidden.")
+            client.send_ooc('You have hidden [{}] {}.'.format(c.id, c.char_name, c.name))
+        else:
+            client.send_ooc('No targets found.')
 
 @mod_only()
 def ooc_cmd_unhide(client, arg):
@@ -279,21 +263,17 @@ def ooc_cmd_unhide(client, arg):
     Unhide player from /getarea and playercounts.
     Usage: /unhide <id>
     """
-    if len(arg) == 0:
-        raise ArgumentError('You must specify a target.')
-    try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
-    except:
-        raise ArgumentError('You must specify a target. Use /unhide <id>.')
-    if targets:
-        c = targets[0]
-        if not c.hidden:
-            raise ClientError(
-                'Client [{}] {} already revealed!'.format(c.id, c.char_name, c.name))
-        c.hide(False)
-        c.send_ooc(
-            "You have been revealed.")
-        client.send_ooc('You have revealed [{}] {}.'.format(c.id, c.char_name, c.name))
+    if not arg:
+        client.hide(False)
+        client.send_ooc("You have been revealed.")
     else:
-        client.send_ooc('No targets found.')
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
+        if targets:
+            c = targets[0]
+            if not c.hidden:
+                raise ClientError('Client [{}] {} already revealed!'.format(c.id, c.char_name, c.name))
+            c.hide(False)
+            c.send_ooc("You have been revealed.")
+            client.send_ooc('You have revealed [{}] {}.'.format(c.id, c.char_name, c.name))
+        else:
+            client.send_ooc('No targets found.')

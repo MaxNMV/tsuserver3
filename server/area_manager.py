@@ -165,6 +165,7 @@ class AreaManager:
             """
 
             self.clients.remove(client)
+            self.server.area_manager.send_arup_players()
             if client in self.afkers:
                 self.afkers.remove(client)
             if len(self.clients) == 0:
@@ -881,7 +882,7 @@ class AreaManager:
         for area in self.areas:
             if area.id == area_id:
                 return area
-        raise AreaError('Area not found.')
+        raise AreaError('Area ID not found.')
 
     def abbreviate(self, name: str) -> str:
         """Abbreviate the name of a room.
@@ -918,7 +919,9 @@ class AreaManager:
         """Broadcast ARUP packet containing player counts."""
         players_list = [0]
         for area in self.areas:
-            players_list.append(len(area.clients))
+            playercount = -1
+            playercount = len([c for c in area.clients if not c.hidden])
+            players_list.append(playercount)
         self.server.send_arup(players_list)
 
     def send_arup_status(self):
