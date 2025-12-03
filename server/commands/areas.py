@@ -14,13 +14,13 @@ __all__ = [
     'ooc_cmd_area',
     'ooc_cmd_getarea',
     'ooc_cmd_getareas',
+    'ooc_cmd_getafk',
     'ooc_cmd_lock',
     'ooc_cmd_unlock',
     'ooc_cmd_area_spectate',
     'ooc_cmd_invite',
     'ooc_cmd_uninvite',
     'ooc_cmd_area_kick',
-    'ooc_cmd_getafk',
     'ooc_cmd_delay'
 ]
 
@@ -220,19 +220,6 @@ def ooc_cmd_area_spectate(client, arg):
     else:
         raise ClientError('Only CM can make the area spectatable.')
 
-@mod_only()
-def ooc_cmd_delay(client, arg):
-    """
-    Change the minimum delay between messages, default is 100.
-    Usage: /delay [delay]
-    """
-    if len(arg) == 0:
-        client.area.next_message_delay = 100
-    else:        
-        client.area.next_message_delay = int(arg)
-    
-    database.log_room('delay', client, client.area, message=client.area.next_message_delay)
-
 @mod_only(area_owners=True)
 def ooc_cmd_invite(client, arg):
     """
@@ -290,13 +277,15 @@ def ooc_cmd_uninvite(client, arg):
 def ooc_cmd_area_kick(client, arg):
     """
     Remove a user from the current area and move them to another area.
-    Usage: /area_kick <id> [destination]
+    Usage:
+        - CMs:  /area_kick <id>
+        - Mods: /area_kick <id> [area id]
     """
-    if client.area.is_locked == client.area.Locked.FREE:
-        raise ClientError('Area isn\'t locked.')
+    if not client.is_mod:  
+        if client.area.is_locked == client.area.Locked.FREE:
+            raise ClientError('Area isn\'t locked.')
     if not arg:
-        raise ClientError(
-            'You must specify a target. Use /area_kick <id> [destination #]')
+        raise ClientError('You must specify a target. Use /area_kick <id> [area id]')
     arg = arg.split(' ')
     if arg[0] == 'afk':
         trgtype = TargetType.AFK
@@ -304,33 +293,42 @@ def ooc_cmd_area_kick(client, arg):
     else:
         trgtype = TargetType.ID
         argi = int(arg[0])
-    targets = client.server.client_manager.get_targets(client, trgtype,
-                                                       argi, False)
-    if targets:
-        try:
-            for c in targets:
+    targets = client.server.client_manager.get_targets(client, trgtype, argi, False)
+    if not targets:
+        client.send_ooc("No targets found.")
+        return
+    try:
+        for c in targets:
+            if client.is_mod:
                 if len(arg) == 1:
-                    area = client.server.area_manager.get_area_by_id(int(0))
+                    kick_area = client.server.area_manager.get_area_by_id(0)
                     output = 0
                 else:
-                    try:
-                        area = client.server.area_manager.get_area_by_id(
-                            int(arg[1]))
-                        output = arg[1]
-                    except AreaError:
-                        raise
-                client.send_ooc(
-                    "Attempting to kick {} to area {}.".format(
-                        c.char_name, output))
-                c.change_area(area)
-                c.send_ooc(
-                    f"You were kicked from the area to area {output}.")
-                database.log_room('area_kick', client, client.area, target=c, message=output)
-                if client.area.is_locked != client.area.Locked.FREE:
-                    client.area.invite_list.pop(c.id)
-        except AreaError:
-            raise
-        except ClientError:
-            raise
-    else:
-        client.send_ooc("No targets found.")
+                    kick_area = client.server.area_manager.get_area_by_id(int(arg[1]))
+                    output = arg[1]
+            else:
+                kick_area = client.server.area_manager.get_area_by_id(0)
+                output = 0
+            client.send_ooc(f"Attempting to kick {c.char_name} to area {output}.")
+            c.change_area(kick_area)
+            c.send_ooc(f"You were kicked from the area to area {output}.")
+            database.log_room('area_kick', client, client.area, target=c, message=output)
+            if client.area.is_locked != client.area.Locked.FREE:
+                client.area.invite_list.pop(c.id, None)
+    except AreaError:
+        raise
+    except ClientError:
+        raise
+
+@mod_only()
+def ooc_cmd_delay(client, arg):
+    """
+    Change the minimum delay between messages, default is 100.
+    Usage: /delay [delay]
+    """
+    if len(arg) == 0:
+        client.area.next_message_delay = 100
+    else:        
+        client.area.next_message_delay = int(arg)
+    
+    database.log_room('delay', client, client.area, message=client.area.next_message_delay)

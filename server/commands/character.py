@@ -17,7 +17,9 @@ __all__ = [
     'ooc_cmd_charids',
     'ooc_cmd_reload',
     'ooc_cmd_hide',
-    'ooc_cmd_unhide'
+    'ooc_cmd_unhide',
+    'ooc_cmd_hide_showname',
+    'ooc_cmd_unhide_showname'
 ]
 
 
@@ -277,3 +279,28 @@ def ooc_cmd_unhide(client, arg):
             client.send_ooc('You have revealed [{}] {}.'.format(c.id, c.char_name, c.name))
         else:
             client.send_ooc('No targets found.')
+
+def ooc_cmd_hide_showname(client, arg):
+    """
+    Hide your showname from /getarea.
+    Usage: /hide_showname
+    """
+    if len(arg) != 0:
+        raise ArgumentError('This command has no arguments.')
+    
+    if client.showname_hidden:
+        raise ClientError('Your showname is already hidden!')
+    client.hide_showname(True)
+    client.send_ooc("You have hidden your showname from getarea.")
+
+def ooc_cmd_unhide_showname(client, arg):
+    """
+    Reveal your showname in /getarea.
+    Usage: /unhide_showname
+    """
+    if len(arg) != 0:
+        raise ArgumentError('This command has no arguments.')
+    if not client.showname_hidden:
+        raise ClientError('Your showname is already revealed!')
+    client.hide_showname(False)
+    client.send_ooc("You have revealed your showname in getarea.")

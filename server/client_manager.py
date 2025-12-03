@@ -118,6 +118,7 @@ class ClientManager:
             # Extra Stuff
             self.blinded = False
             self.hidden = False
+            self.showname_hidden = False
             self.modicon = False
 
         def send_raw_message(self, msg: str):
@@ -300,6 +301,9 @@ class ClientManager:
         def hide(self, tog=True):
             self.hidden = tog
             self.server.area_manager.send_arup_players()
+        
+        def hide_showname(self, tog=True):
+            self.showname_hidden = tog
 
         def wtce_mute(self) -> int:
             """Check if the client can use WT/CE or not.
@@ -507,9 +511,11 @@ class ClientManager:
                     info += '[💤]'
                 info += f' [{c.id}] {c.char_name}'
                 if self.is_mod:
-                    info += f' | IPID: {c.ipid}' 
+                    info += f' | IPID: {c.ipid}'
+                if self.is_mod or not c.showname_hidden:
                     if c.showname != "":
-                        info += f' | Showname: {c.showname}' 
+                        info += f' | Showname: {c.showname}'
+                if self.is_mod:
                     if c.name != "":
                         info += f' | OOC: {c.name}'
             return info

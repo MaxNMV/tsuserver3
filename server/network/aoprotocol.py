@@ -673,6 +673,9 @@ class AOProtocol(asyncio.Protocol):
             # Turn off the ding.
             ding = 0
 
+        if color == self.server.mod_color and not (self.client.is_mod):
+            color = 0
+
         max_char = 0
         try:
             max_char = int(self.server.config['max_chars'])
