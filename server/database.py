@@ -15,6 +15,7 @@ from datetime import datetime
 from functools import reduce
 from textwrap import dedent
 from typing import List
+from collections import Counter
 
 from .exceptions import ServerError
 
@@ -152,65 +153,63 @@ class Database:
                 INSERT OR IGNORE INTO hdids(hdid, ipid) VALUES (?, ?)
                 '''), (hdid, ipid))
 
-    def ban(self,
-            target_id,
-            reason,
-            ban_type='ipid',
-            banned_by=None,
-            unban_date=None,
-            ban_id=None,
-            special_ban_data=None
-            ):
+    def ban(
+        self,
+        target_id,
+        reason,
+        ban_type="ipid",
+        banned_by=None,
+        unban_date=None,
+        ban_id=None,
+    ):
         """
         Ban an IPID or HDID.
         These should be used sparingly, as they can affect large swaths
         of web users if used incorrectly.
         """
-        if ban_type not in ('ipid', 'hdid'):
-            raise ServerError(f'Unknown ban type {ban_type}')
-
         with self.db as conn:
             if ban_id is None:
-                existing_ban = self.find_ban(**{ ban_type: target_id })
-                if existing_ban is not None:
-                    raise ServerError(f'This ban is already covered by ban ID {existing_ban.ban_id}.')
-
-                ban_date = arrow.get().datetime
-
-                event_logger.info(f'{banned_by.name} ({banned_by.ipid}) ' +
-                                  f'banned {target_id}: \'{reason}\'.')
-                ban_id = conn.execute(dedent('''
-                    INSERT INTO bans(reason, banned_by, ban_date, unban_date, ban_data)
-                    VALUES (?, ?, ?, ?, ?)
-                    '''), (reason, banned_by.ipid, ban_date, unban_date, special_ban_data)).lastrowid
-            else:
-                ban_exists = conn.execute(dedent('''
-                    SELECT ban_id, unbanned FROM bans WHERE ban_id = ?
-                    '''), (target_id, )).fetchone()
-                if ban_exists is None:
-                    raise ServerError(f'Ban ID {target_id} does not exist.')
-                if bool(ban_exists.unbanned):
-                    raise ServerError(f'Ban ID {target_id} is already unbanned.')
-            if ban_type == 'ipid':
-                ipid_exists = conn.execute(dedent('''
-                    SELECT ipid FROM ipids WHERE ipid = ?
-                    '''), (target_id, )).fetchone()
-                if ipid_exists is None:
-                    raise ServerError(f'IPID {target_id} does not exist')
-
+                logger.info(
+                    f"{banned_by.name} ({banned_by.ipid}) "
+                    + f"banned {target_id}: '{reason}'."
+                )
+                ban_id = conn.execute(
+                    dedent(
+                        """
+                    INSERT INTO bans(reason, banned_by, unban_date)
+                    VALUES (?, ?, ?)
+                    """
+                    ),
+                    (reason, banned_by.ipid, unban_date),
+                ).lastrowid
+            if ban_type == "ipid":
                 try:
-                    conn.execute(dedent('''
+                    conn.execute(
+                        dedent(
+                            """
                         INSERT INTO ip_bans(ipid, ban_id) VALUES (?, ?)
-                        '''), (target_id, ban_id))
+                        """
+                        ),
+                        (target_id, ban_id),
+                    )
                 except sqlite3.IntegrityError as exc:
-                    raise ServerError(f'IPID {target_id} is already covered by ban ID {ban_id}.')
-            elif ban_type == 'hdid':
+                    raise ServerError(
+                        f"Error inserting ban: {exc}" " (the IPID may not exist)"
+                    )
+            elif ban_type == "hdid":
                 try:
-                    conn.execute(dedent('''
+                    conn.execute(
+                        dedent(
+                            """
                         INSERT INTO hdid_bans(hdid, ban_id) VALUES (?, ?)
-                        '''), (target_id, ban_id))
+                        """
+                        ),
+                        (target_id, ban_id),
+                    )
                 except sqlite3.IntegrityError as exc:
-                    raise ServerError(f'Error inserting ban: {exc}')
+                    raise ServerError(f"Error inserting ban: {exc}")
+            else:
+                raise ServerError(f"unknown ban type {ban_type}")
 
         if unban_date is not None:
             self._schedule_unban(ban_id)
@@ -419,13 +418,29 @@ class Database:
         target_ipid = target.ipid if target is not None else None
         subtype_id = self._subtype_atom('misc', event_subtype)
         data_json = json.dumps(data)
-        event_logger.info(f'{event_subtype} ({client_ipid} onto {target_ipid}): {data}')
+        event_logger.info(f'({client_ipid} onto {target_ipid}) - {event_subtype}: {data}')
 
         with self.db as conn:
             conn.execute(dedent('''
                 INSERT INTO misc_events(ipid, target_ipid, event_subtype,
                     event_data) VALUES (?, ?, ?, ?)
                 '''), (client_ipid, target_ipid, subtype_id, data_json))
+
+    def log_simple(self, event_subtype, client=None, data=None):
+        """
+        Log simple events. The event subtype is translated to an enum
+        value, creating one if necessary.
+        """
+        client_ipid = client.ipid if client is not None else None
+        subtype_id = self._subtype_atom('misc', event_subtype)
+        data_json = json.dumps(data)
+        event_logger.info(f'{client_ipid} - {event_subtype}: {data}')
+
+        with self.db as conn:
+            conn.execute(dedent('''
+                INSERT INTO misc_events(ipid, event_subtype,
+                    event_data) VALUES (?, ?, ?)
+                '''), (client_ipid, subtype_id, data_json))
 
     def recent_bans(self, count=5):
         """
@@ -439,6 +454,127 @@ class Database:
                         ORDER BY ban_date DESC LIMIT ?)
                     ORDER BY ban_date ASC
                     '''), (count,)).fetchall()]
+
+    def recent_ooc_names(self, ipid, count=7):
+        """
+        Find the most recent known OOC names of an IPID.
+        """
+        batch_size = 104
+        offset = 0
+        unique_ooc_name = set()
+        unique_ooc_lower = set()
+        result = []
+        with self.db as conn:
+            while len(unique_ooc_name) < count:
+                row = conn.execute(dedent('''
+                SELECT ooc_name FROM room_events
+                WHERE ipid = ? AND ooc_name IS NOT NULL AND ooc_name != ''
+                ORDER BY event_time DESC LIMIT ? OFFSET ?
+                '''), (ipid, batch_size, offset)).fetchall()
+                if not row:
+                    break
+                for r in row:
+                    name = r["ooc_name"]
+                    name_lower = name.lower()
+                    if name_lower not in unique_ooc_lower:
+                        unique_ooc_lower.add(name_lower)
+                        unique_ooc_name.add(name)
+                        result.append(name)
+                        if len(unique_ooc_name) >= count:
+                            break
+                offset += batch_size
+        return result
+
+    def recent_shownames(self, ipid, count=7):
+        """
+        Find the most recent known Shownames of an IPID.
+        """
+        batch_size = 104
+        offset = 0
+        unique_ic_name = set()
+        unique_ic_lower = set()
+        result = []
+        with self.db as conn:
+            while len(unique_ic_name) < count:
+                row = conn.execute(dedent('''
+                SELECT ic_name FROM ic_events
+                WHERE ipid = ? AND ic_name IS NOT NULL AND ic_name != ''
+                ORDER BY event_time DESC LIMIT ? OFFSET ?
+                '''), (ipid, batch_size, offset)).fetchall()
+                if not row:
+                    break
+                for r in row:
+                    name = r["ic_name"]
+                    name_lower = name.lower()
+                    if name_lower not in unique_ic_lower:
+                        unique_ic_lower.add(name_lower)
+                        unique_ic_name.add(name)
+                        result.append(name)
+                        if len(unique_ic_name) >= count:
+                            break
+                offset += batch_size
+        return result
+
+    def char_history(self, ipid, recent_count=7, usage_count=7):
+        """
+        Find character usage history.
+        """
+        batch_size = 104
+        offset = 0
+        unique_chars = set()
+        unique_chars_lower = set()
+        recent_chars = []
+        char_usage_count = Counter()
+        with self.db as conn:
+            while True:
+                row = conn.execute(dedent('''
+                SELECT char_name FROM room_events
+                WHERE ipid = ? AND event_subtype = 1 AND char_name IS NOT NULL AND char_name != ''
+                ORDER BY event_time DESC LIMIT ? OFFSET ?
+                '''), (ipid, batch_size, offset)).fetchall()
+                if not row:
+                    break
+                for r in row:
+                    charname = r["char_name"]
+                    charname_lower = charname.lower()                    
+                    if len(unique_chars) < recent_count and charname_lower not in unique_chars_lower:
+                        unique_chars_lower.add(charname_lower)
+                        unique_chars.add(charname)
+                        recent_chars.append(charname)
+                    char_usage_count[charname] += 1
+                offset += batch_size
+        most_used_chars = [name for name, _ in char_usage_count.most_common(usage_count)]
+        return recent_chars, most_used_chars
+    
+    def hdid_history(self, ipid, count=7):
+        """
+        Find the most recent known HDIDs of an IPID.
+        """
+        batch_size = 104
+        offset = 0
+        unique_hdids = set()
+        unique_hdids_lower = set()
+        result = []
+        with self.db as conn:
+            while len(unique_hdids) < count:
+                row = conn.execute(dedent('''
+                SELECT hdid FROM connect_events
+                WHERE ipid = ?
+                ORDER BY event_time DESC LIMIT ? OFFSET ?
+                '''), (ipid, batch_size, offset)).fetchall()
+                if not row:
+                    break
+                for r in row:
+                    HDID = r["hdid"]
+                    HDID_lower = HDID.lower()
+                    if HDID_lower not in unique_hdids_lower:
+                        unique_hdids_lower.add(HDID_lower)
+                        unique_hdids.add(HDID)
+                        result.append(HDID)
+                        if len(unique_hdids) >= count:
+                            break
+                offset += batch_size
+        return result
 
     def _subtype_atom(self, event_type, event_subtype):
         if event_type not in ('room', 'misc'):

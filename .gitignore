@@ -79,12 +79,3 @@ coverage.xml
 
 ### VSCode
 .vscode/
-config_sample/areas.yaml
-config_sample/backgrounds.yaml
-config_sample/characters.yaml
-config_sample/config.yaml
-config_sample/dice.yaml
-config_sample/gimp.yaml
-config_sample/iniswaps.yaml
-config_sample/iprange_ban.txt
-config_sample/music.yaml

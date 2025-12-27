@@ -822,6 +822,8 @@ class AOProtocol(asyncio.Protocol):
             self.client.send_ooc(
                 'Your message was not sent for safety reasons: you left a space before that slash.')
             return
+        database.log_room("chat.ooc", self.client,
+                    self.client.area, message=args[1])
         if args[1].startswith('/'):
             spl = args[1][1:].split(' ', 1)
             cmd = spl[0].lower()
@@ -830,6 +832,9 @@ class AOProtocol(asyncio.Protocol):
                 arg = spl[1][:256]
             try:
                 called_function = f'ooc_cmd_{cmd}'
+                if len(self.client.server.command_aliases) > 0 and not hasattr(commands, called_function):
+                    if cmd in self.client.server.command_aliases:
+                        called_function = f"ooc_cmd_{self.client.server.command_aliases[cmd]}"
                 if not hasattr(commands, called_function):
                     self.client.send_ooc('Invalid command.')
                 else:
@@ -851,8 +856,6 @@ class AOProtocol(asyncio.Protocol):
                 'CT',
                 '[' + self.client.area.abbreviation + ']' + self.client.name,
                 args[1])
-            database.log_room('ooc', self.client,
-                              self.client.area, message=args[1])
 
     def net_cmd_mc(self, args):
         """Play music.

@@ -53,11 +53,13 @@ class TsuServer3:
         self.music_pages_ao1 = None
         self.bglock = False
         self.backgrounds = None
+        self.backgrounds_categories = None
         self.zalgo_tolerance = None
         self.mod_color = None
         self.ipRange_bans = []
         self.geoIpReader = None
         self.useGeoIp = False
+        self.command_aliases = {}
 
         try:
             self.geoIpReader = geoip2.database.Reader('./storage/GeoLite2-ASN.mmdb')
@@ -71,6 +73,7 @@ class TsuServer3:
 
         try:
             self.load_config()
+            self.load_command_aliases()
             self.area_manager = AreaManager(self)
             self.load_iniswaps()
             self.load_characters()
@@ -259,6 +262,16 @@ class TsuServer3:
         if 'asset_url' not in self.config:
             self.config['asset_url'] = None
 
+    def load_command_aliases(self):
+        """Load a list of alternative command names."""
+        try:
+            with open(
+                "config/command_aliases.yaml", "r", encoding="utf-8"
+            ) as command_aliases:
+                self.command_aliases = yaml.safe_load(command_aliases)
+        except Exception:
+            logger.debug("Cannot find command_aliases.yaml")
+
     def load_characters(self):
         """Load the character list from a YAML file."""
         with open('config/characters.yaml', 'r', encoding='utf-8') as chars:
@@ -277,8 +290,16 @@ class TsuServer3:
 
     def load_backgrounds(self):
         """Load the backgrounds list from a YAML file."""
-        with open('config/backgrounds.yaml', 'r', encoding='utf-8') as bgs:
-            self.backgrounds = yaml.safe_load(bgs)
+        with open("config/backgrounds.yaml", "r", encoding="utf-8") as bgs:
+            bg_yaml = yaml.safe_load(bgs)
+            # old style of backgrounds.yaml
+            if type(bg_yaml) is list:
+                self.backgrounds_categories = {"backgrounds": bg_yaml}
+                self.backgrounds = bg_yaml
+            # new style of categorized backgrounds.yaml
+            else:
+                self.backgrounds_categories = bg_yaml
+                self.backgrounds = sum(list(self.backgrounds_categories.values()), [])
 
     def load_iniswaps(self):
         """Load a list of characters for which INI swapping is allowed."""
@@ -535,6 +556,7 @@ class TsuServer3:
                         client.send_command('AUTH', '-1')
             self.config['modpass'] = cfg_yaml['modpass']
 
+        self.load_command_aliases()
         self.load_characters()
         self.load_iniswaps()
         self.load_music()

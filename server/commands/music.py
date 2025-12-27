@@ -22,64 +22,56 @@ def ooc_cmd_currentmusic(client, arg):
     """
     Show the current music playing.
     Usage: /currentmusic
+    Alias: /cmu
     """
     if len(arg) != 0:
         raise ArgumentError('This command has no arguments.')
     if client.area.current_music == '':
         raise ClientError('There is no music currently playing.')
     if client.is_mod:
-        client.send_ooc(
-            'The current music is {} and was played by {} ({}).'.format(
-                client.area.current_music, client.area.current_music_player,
-                client.area.current_music_player_ipid))
+        client.send_ooc('The current music is {} and was played by {} ({}).'.format(client.area.current_music, client.area.current_music_player,client.area.current_music_player_ipid))
     else:
-        client.send_ooc(
-            'The current music is {} and was played by {}.'.format(
-                client.area.current_music, client.area.current_music_player))
+        client.send_ooc('The current music is {} and was played by {}.'.format(client.area.current_music, client.area.current_music_player))
 
 @mod_only(area_owners=True)
 def ooc_cmd_jukebox_toggle(client, arg):
     """
     Toggle jukebox mode. While jukebox mode is on, all music changes become votes for the next track, rather than changing the track immediately.
     Usage: /jukebox_toggle
+    Alias: /jbt
     """
     if len(arg) != 0:
         raise ArgumentError('This command has no arguments.')
     client.area.jukebox = not client.area.jukebox
     client.area.jukebox_votes = []
-    client.area.broadcast_ooc('{} [{}] has set the jukebox to {}.'.format(
-        client.char_name, client.id, client.area.jukebox))
-    database.log_room('jukebox_toggle', client, client.area,
-        message=client.area.jukebox)
+    client.area.broadcast_ooc('{} [{}] has set the jukebox to {}.'.format(client.char_name, client.id, client.area.jukebox))
+    database.log_room('jukebox_toggle', client, client.area,message=client.area.jukebox)
 
 @mod_only(area_owners=True)
 def ooc_cmd_jukebox_skip(client, arg):
     """
     Skip the current track.
     Usage: /jukebox_skip
+    Alias: /jbs
     """
     if len(arg) != 0:
         raise ArgumentError('This command has no arguments.')
     if not client.area.jukebox:
         raise ClientError('This area does not have a jukebox.')
     if len(client.area.jukebox_votes) == 0:
-        raise ClientError(
-            'There is no song playing right now, skipping is pointless.')
+        raise ClientError('There is no song playing right now, skipping is pointless.')
     client.area.start_jukebox()
     if len(client.area.jukebox_votes) == 1:
-        client.area.broadcast_ooc(
-            '{} [{}] has forced a skip, restarting the only jukebox song.'.
-            format(client.char_name, client.id))
+        client.area.broadcast_ooc('{} [{}] has forced a skip, restarting the only jukebox song.'.format(client.char_name, client.id))
     else:
-        client.area.broadcast_ooc(
-            '{} [{}] has forced a skip to the next jukebox song.'.format(
-                client.char_name, client.id))
+        client.area.broadcast_ooc('{} [{}] has forced a skip to the next jukebox song.'.format(client.char_name, client.id))
     database.log_room('jukebox_skip', client, client.area)
 
 def ooc_cmd_jukebox(client, arg):
     """
     Show information about the jukebox's queue and votes.
     Usage: /jukebox
+    Alias: /jb
     """
     if len(arg) != 0:
         raise ArgumentError('This command has no arguments.')
@@ -93,7 +85,6 @@ def ooc_cmd_jukebox(client, arg):
         voters = dict()
         chance = dict()
         message = ''
-
         for current_vote in client.area.jukebox_votes:
             if songs.count(current_vote.name) == 0:
                 songs.append(current_vote.name)
@@ -103,11 +94,9 @@ def ooc_cmd_jukebox(client, arg):
                 voters[current_vote.name].append(current_vote.client)
                 chance[current_vote.name] += current_vote.chance
             total += current_vote.chance
-
         for song in songs:
             message += '\n- ' + song + '\n'
             message += '-- VOTERS: '
-
             first = True
             for voter in voters[song]:
                 if first:
@@ -118,28 +107,38 @@ def ooc_cmd_jukebox(client, arg):
                 if client.is_mod:
                     message += '(' + str(voter.ipid) + ')'
             message += '\n'
-
             if total == 0:
                 message += '-- CHANCE: 100'
             else:
                 message += '-- CHANCE: ' + str(
                     round(chance[song] / total * 100))
-
-        client.send_ooc(
-            f'The jukebox has the following songs in it:{message}')
+        client.send_ooc(f'The jukebox has the following songs in it:{message}')
 
 @mod_only(area_owners=True)
 def ooc_cmd_play(client, arg):
     """
     Play a track.
-    Usage: /play <name>
+    Use 1 or loop to make the music loop. Use 0 or noloop for no looping.
+    Usage: /play <name> <loop mode>
+    Alias: /p <name> <loop mode>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a song.')
-    if YOUTUBE_RE.search(arg):
+    args = arg.rsplit(" ", 1)
+    link = args[0].strip()
+    loop_mode = 1
+    if len(args) > 1:
+        loop_arg = args[1].strip().lower()
+        if loop_arg in ("0", "noloop"):
+            loop_mode = 0
+        elif loop_arg in ("1", "loop"):
+            loop_mode = 1
+        else:
+            raise ArgumentError('Invalid loop mode. Use 1 or loop to loop or 0 and noloop for no loop.')
+    if YOUTUBE_RE.search(link):
         raise ArgumentError('You cannot use YouTube links. You may use direct links to MP3, Ogg, or M3U streams.')
-    client.area.play_music(arg, client.char_id, 0) #don't loop it
-    client.area.add_music_playing(client, arg)
+    client.area.play_music(link, client.char_id, loop_mode)
+    client.area.add_music_playing(client, link)
     database.log_room('play', client, client.area, message=arg)
 
 @mod_only()
@@ -147,20 +146,19 @@ def ooc_cmd_blockdj(client, arg):
     """
     Prevent a user from changing music.
     Usage: /blockdj <id>
+    Alias: /bdj <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target. Use /blockdj <id>.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
         raise ArgumentError('You must enter a number. Use /blockdj <id>.')
     if not targets:
         raise ArgumentError('Target not found. Use /blockdj <id>.')
     for target in targets:
         target.is_dj = False
-        target.send_ooc(
-            'A moderator muted you from changing the music.')
+        target.send_ooc('A moderator muted you from changing the music.')
         database.log_room('blockdj', client, client.area, target=target)
         target.area.remove_jukebox_vote(target, True)
     client.send_ooc('blockdj\'d {}.'.format(
@@ -171,20 +169,19 @@ def ooc_cmd_unblockdj(client, arg):
     """
     Unblock a user from changing music.
     Usage: /unblockdj <id>
+    Alias: /udj <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target. Use /unblockdj <id>.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
         raise ArgumentError('You must enter a number. Use /unblockdj <id>.')
     if not targets:
         raise ArgumentError('Target not found. Use /blockdj <id>.')
     for target in targets:
         target.is_dj = True
-        target.send_ooc(
-            'A moderator unmuted you from changing the music.')
+        target.send_ooc('A moderator unmuted you from changing the music.')
         database.log_room('unblockdj', client, client.area, target=target)
     client.send_ooc('Unblockdj\'d {}.'.format(
         targets[0].char_name))

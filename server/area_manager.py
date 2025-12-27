@@ -669,7 +669,7 @@ class AreaManager:
                 client.send_ooc('You don\'t have permission to start a new examination in this area!')
                 return False
             elif self.is_testifying:
-                client.send_ooc('You can\'t start an examination during a testimony! (Hint: Say \'/end\' to stop recording!)')
+                client.send_ooc('You can\'t start an examination during a testimony! (Hint: Say "/end" to stop recording!)')
                 return False
             elif self.is_examining:
                 client.send_ooc('You can\'t start an examination until you finish this one!')

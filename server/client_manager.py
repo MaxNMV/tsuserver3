@@ -120,6 +120,7 @@ class ClientManager:
             self.hidden = False
             self.showname_hidden = False
             self.modicon = False
+            self.autogetarea = False
 
         def send_raw_message(self, msg: str):
             """Send a raw packet over TCP.
@@ -253,7 +254,7 @@ class ClientManager:
             old_char = self.char_name
             self.char_id = char_id
             self.pos = ''
-            self.area.shadow_status[self.char_id] = [self.ipid, self.hdid]
+            self.area.shadow_status[self.char_id] = [self.ipid]
             self.send_command('PV', self.id, 'CID', self.char_id)
             self.area.send_command('CharsCheck',
                                    *self.get_available_char_list())
@@ -388,9 +389,7 @@ class ClientManager:
             if area.is_locked == area.Locked.LOCKED and not self.is_mod and not self.id in area.invite_list:
                 raise ClientError('That area is locked!')
             if area.is_locked == area.Locked.SPECTATABLE and not self.is_mod and not self.id in area.invite_list:
-                self.send_ooc(
-                    'This area is spectatable, but not free - you cannot talk in-character unless invited.'
-                )
+                self.send_ooc('This area is spectatable, but not free - you cannot talk in-character unless invited.')
             if self.area_curse is not None and self.area_curse != area.id:
                 raise ClientError('You are bound to this area.')
 
@@ -407,20 +406,20 @@ class ClientManager:
                     raise ClientError('No available characters in that area.')
 
                 self.change_character(new_char_id)
-                self.send_ooc(
-                    f'Character taken, switched to {self.char_name}.')
+                self.send_ooc(f'Character taken, switched to {self.char_name}.')
 
             self.area.remove_client(self)
             self.area = area
             area.new_client(self)
 
-            self.send_ooc(
-                f'Changed area to {area.name} [{self.area.status}].')
+            self.send_ooc(f'Changed area to {area.name} [{self.area.status}].')
+            if self.autogetarea and not self.blinded:
+                self.send_area_info(self.area.id, False)
             self.area.send_command('CharsCheck',
                                    *self.get_available_char_list())
             self.area.send_command(
                 'CharsCheck', *self.get_available_char_list())
-            self.area.shadow_status[self.char_id] = [self.ipid, self.hdid]
+            self.area.shadow_status[self.char_id] = [self.ipid]
             self.send_command('HP', 1, self.area.hp_def)
             self.send_command('HP', 2, self.area.hp_pro)
             self.send_command('BN', self.area.background, self.pos)
@@ -435,7 +434,7 @@ class ClientManager:
                     owner = f'CMs: {area.get_cms()}'
                 lock = {
                     area.Locked.FREE: '',
-                    area.Locked.SPECTATABLE: '[SPECTATABLE]',
+                    area.Locked.SPECTATABLE: '[SPECTATABLE] 👀',
                     area.Locked.LOCKED: '[LOCKED] 🔒'
                 }
                 player_list = [c for c in area.clients if not c.hidden or c == self]
@@ -466,7 +465,7 @@ class ClientManager:
 
             lock = {
                 area.Locked.FREE: '',
-                area.Locked.SPECTATABLE: '[SPECTATABLE]',
+                area.Locked.SPECTATABLE: '[SPECTATABLE] 👀',
                 area.Locked.LOCKED: '[LOCKED] 🔒'
             }
             if afk_check:
@@ -510,6 +509,8 @@ class ClientManager:
                 if c in area.afkers:
                     info += '[💤]'
                 info += f' [{c.id}] {c.char_name}'
+                if c.pos != "":
+                    info += f" | Position: {c.pos}"
                 if self.is_mod:
                     info += f' | IPID: {c.ipid}'
                 if self.is_mod or not c.showname_hidden:

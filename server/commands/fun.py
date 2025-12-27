@@ -19,6 +19,7 @@ def ooc_cmd_disemvowel(client, arg):
     """
     Remove all vowels from a user's IC chat.
     Usage: /disemvowel <id>
+    Alias: /de <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
@@ -40,15 +41,14 @@ def ooc_cmd_undisemvowel(client, arg):
     """
     Give back the freedom of vowels to a user.
     Usage: /undisemvowel <id>
+    Alias: /ude <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
-        raise ArgumentError(
-            'You must specify a target. Use /undisemvowel <id>.')
+        raise ArgumentError('You must specify a target. Use /undisemvowel <id>.')
     if targets:
         for c in targets:
             database.log_room('undisemvowel', client, client.area, target=c)
@@ -62,12 +62,12 @@ def ooc_cmd_shake(client, arg):
     """
     Scramble the words in a user's IC chat.
     Usage: /shake <id>
+    Alias: /sh <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
         raise ArgumentError('You must specify a target. Use /shake <id>.')
     if targets:
@@ -83,12 +83,12 @@ def ooc_cmd_unshake(client, arg):
     """
     Give back the freedom of coherent grammar to a user.
     Usage: /unshake <id>
+    Alias: /ush <id>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify a target.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
         raise ArgumentError('You must specify a target. Use /unshake <id>.')
     if targets:
@@ -108,8 +108,7 @@ def ooc_cmd_gimp(client, arg):
     if len(arg) == 0:
         raise ArgumentError('You must specify a target ID.')
     try:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(arg), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(arg), False)
     except:
         raise ArgumentError('You must specify a target. Use /gimp <id>.')
     if targets:

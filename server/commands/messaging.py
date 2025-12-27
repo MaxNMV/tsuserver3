@@ -5,7 +5,7 @@ from server.exceptions import ClientError, ArgumentError, AreaError
 from . import mod_only
 
 __all__ = [
-    'ooc_cmd_a',
+    'ooc_cmd_cm_announce',
     'ooc_cmd_s',
     'ooc_cmd_g',
     'ooc_cmd_gm',
@@ -20,24 +20,22 @@ __all__ = [
 ]
 
 
-def ooc_cmd_a(client, arg):
+def ooc_cmd_cm_announce(client, arg):
     """
     Send a message to an area that you are a CM in.
-    Usage: /a <area> <message>
+    Usage: /cm_announce <area> <message>
+    Alias: /cma <area> <message>
     """
     if len(arg) == 0:
         raise ArgumentError('You must specify an area.')
     arg = arg.split(' ')
-
     try:
         area = client.server.area_manager.get_area_by_id(int(arg[0]))
     except ValueError:
         raise ArgumentError('The first argument must be an area ID.')
     except AreaError:
         raise
-
     message_areas_cm(client, [area], ' '.join(arg[1:]))
-
 
 def ooc_cmd_s(client, arg):
     """
@@ -53,7 +51,6 @@ def ooc_cmd_s(client, arg):
         return
     message_areas_cm(client, areas, arg)
 
-
 def message_areas_cm(client, areas, message):
     for a in areas:
         if not client in a.owners:
@@ -62,7 +59,6 @@ def message_areas_cm(client, areas, message):
         a.send_command('CT', client.name, message)
         a.send_owner_command('CT', client.name, message)
         database.log_room('chat.cm', client, a, message=message)
-
 
 def ooc_cmd_g(client, arg):
     """
@@ -75,7 +71,6 @@ def ooc_cmd_g(client, arg):
         raise ArgumentError("You can't send an empty message.")
     client.server.broadcast_global(client, arg)
     database.log_room('chat.global', client, client.area, message=arg)
-
 
 @mod_only()
 def ooc_cmd_gm(client, arg):
@@ -90,7 +85,6 @@ def ooc_cmd_gm(client, arg):
     client.server.broadcast_global(client, arg, True)
     database.log_room('chat.global-mod', client, client.area, message=arg)
 
-
 @mod_only()
 def ooc_cmd_m(client, arg):
     """
@@ -102,7 +96,6 @@ def ooc_cmd_m(client, arg):
     client.server.send_modchat(client, arg)
     database.log_room('chat.mod', client, client.area, message=arg)
 
-
 @mod_only()
 def ooc_cmd_lm(client, arg):
     """
@@ -111,30 +104,26 @@ def ooc_cmd_lm(client, arg):
     """
     if len(arg) == 0:
         raise ArgumentError("Can't send an empty message.")
-    client.area.send_command(
-        'CT', '{}[MOD][{}]'.format(client.server.config['hostname'],
-                                   client.char_name), arg)
+    client.area.send_command('CT', '{}[MOD][{}]'.format(client.server.config['hostname'],client.char_name), arg)
     database.log_room('chat.local-mod', client, client.area, message=arg)
-
 
 @mod_only()
 def ooc_cmd_announce(client, arg):
     """
     Make a server-wide announcement.
     Usage: /announce <message>
+    Alias: /ann
     """
     if len(arg) == 0:
         raise ArgumentError("Can't send an empty message.")
-    client.server.send_all_cmd_pred(
-        'CT', '{}'.format(client.server.config['hostname']),
-        f'=== Announcement ===\r\n{arg}\r\n==================', '1')
+    client.server.send_all_cmd_pred('CT', '{}'.format(client.server.config['hostname']),f'=== Announcement ===\r\n{arg}\r\n==================', '1')
     database.log_room('chat.announce', client, client.area, message=arg)
-
 
 def ooc_cmd_toggleglobal(client, arg):
     """
     Mute global chat.
     Usage: /toggleglobal
+    Alias: /tg
     """
     if len(arg) != 0:
         raise ArgumentError("This command doesn't take any arguments")
@@ -143,7 +132,6 @@ def ooc_cmd_toggleglobal(client, arg):
     if client.muted_global:
         glob_stat = 'off'
     client.send_ooc(f'Global chat turned {glob_stat}.')
-
 
 def ooc_cmd_need(client, arg):
     """
@@ -157,11 +145,11 @@ def ooc_cmd_need(client, arg):
     client.server.broadcast_need(client, arg)
     database.log_room('chat.announce.need', client, client.area, message=arg)
 
-
 def ooc_cmd_toggleadverts(client, arg):
     """
     Mute advertisements.
     Usage: /toggleadverts
+    Alias: /ta
     """
     if len(arg) != 0:
         raise ArgumentError("This command doesn't take any arguments")
@@ -170,7 +158,6 @@ def ooc_cmd_toggleadverts(client, arg):
     if client.muted_adverts:
         adv_stat = 'off'
     client.send_ooc(f'Advertisements turned {adv_stat}.')
-
 
 def ooc_cmd_pm(client, arg):
     """
@@ -182,20 +169,16 @@ def ooc_cmd_pm(client, arg):
     key = ''
     msg = None
     if len(args) < 2:
-        raise ArgumentError(
-            'Not enough arguments. use /pm <target> <message>. Target should be ID, OOC-name or char-name. Use /getarea for getting info like "[ID] char-name".'
-        )
+        raise ArgumentError('Not enough arguments. use /pm <target> <message>. Target should be ID, OOC-name or char-name. Use /getarea for getting info like "[ID] char-name".')
     targets = client.server.client_manager.get_targets(client,
                                                        TargetType.CHAR_NAME,
                                                        arg, True)
     key = TargetType.CHAR_NAME
     if len(targets) == 0 and args[0].isdigit():
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.ID, int(args[0]), False)
+        targets = client.server.client_manager.get_targets(client, TargetType.ID, int(args[0]), False)
         key = TargetType.ID
     if len(targets) == 0:
-        targets = client.server.client_manager.get_targets(
-            client, TargetType.OOC_NAME, arg, True)
+        targets = client.server.client_manager.get_targets(client, TargetType.OOC_NAME, arg, True)
         key = TargetType.OOC_NAME
     if len(targets) == 0:
         raise ArgumentError('No targets found.')
@@ -208,29 +191,22 @@ def ooc_cmd_pm(client, arg):
             if key == TargetType.OOC_NAME:
                 msg = arg[len(targets[0].name) + 1:]
     except:
-        raise ArgumentError(
-            'Not enough arguments. Use /pm <target> <message>.')
+        raise ArgumentError('Not enough arguments. Use /pm <target> <message>.')
     c = targets[0]
     if c.pm_mute:
         raise ClientError('This user muted all pm conversation')
     else:
         if c.is_mod:
-            c.send_ooc(
-                'PM from {} (ID: {}, IPID: {}) in {} ({}): {}'.format(
-                    client.name, client.id, client.ipid, client.area.name,
-                    client.char_name, msg))
+            c.send_ooc('PM from {} (ID: {}, IPID: {}) in {} ({}): {}'.format(client.name, client.id, client.ipid, client.area.name,client.char_name, msg))
         else:
-            c.send_ooc('PM from {} (ID: {}) in {} ({}): {}'.format(
-                client.name, client.id, client.area.name,
-                client.char_name, msg))
-        client.send_ooc('PM sent to {}. Message: {}'.format(
-            args[0], msg))
-
+            c.send_ooc('PM from {} (ID: {}) in {} ({}): {}'.format(client.name, client.id, client.area.name,client.char_name, msg))
+        client.send_ooc('PM sent to {}. Message: {}'.format(args[0], msg))
 
 def ooc_cmd_mutepm(client, arg):
     """
     Mute private messages.
     Usage: /mutepm
+    Alias: /mpm
     """
     if len(arg) != 0:
         raise ArgumentError("This command doesn't take any arguments")
